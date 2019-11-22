@@ -35,9 +35,9 @@
     <div id="body"></div>
 <!-- load the d3.js library --> 
 <script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
     
 <script>
-console.log(d3.json("test.json", (data) => console.log(data)))
 
 var treeData = [
   {
@@ -109,8 +109,8 @@ var stroke_callback = "#ccc";
 load_dataset(treeData)
 function load_dataset(json) {
   root = json[0];
+  root._original = root.children
   function toggleAll(d) {
-    console.log(d)
     if (d && d.children) {
       d.children.forEach(toggleAll);
       toggle(d);
@@ -124,7 +124,6 @@ function load_dataset(json) {
 }
 
 function update(source) {
-    console.log(source)
   var duration = d3.event && d3.event.altKey ? 5000 : 500;
 
   // Compute the new tree layout.
@@ -146,7 +145,6 @@ function update(source) {
   nodeEnter.append("svg:rect")
       .attr("x", function(d) {
         var label = node_label(d);
-        console.log(label, label.length)
 
         var text_len = label.length * char_to_pxl;
         var width = d3.max([rect_width, text_len])
@@ -174,7 +172,6 @@ function update(source) {
   nodeUpdate.select("rect")
       .attr("width", function(d) {
         var label = node_label(d);
-        console.log(label)
         var text_len = label.length * char_to_pxl;
         var width = d3.max([rect_width, text_len])
         return width;
@@ -240,15 +237,40 @@ function update(source) {
 
 // Toggle children.
 function toggle(d) {
-    console.log("hi")
-    console.log(d)
-  if (d.children) {
+ // check if siblings are shown
+ if (d._children && d.parent) {
+    console.log("im here")
+    console.log(d._children)
+    var siblings = [];
+    for (child in d.parent.children) {
+      if (_.isEqual(d.parent.children[child],d) == false) {
+        siblings.push(d.parent.children[child])
+      }
+    }
+    d.parent.children = [d]
+    d.parent._children = siblings
+    d.children = d._original;
+    d._children = null;
+ } else {
+    if (d.parent) {
+      // d.parent.children = d.parent._children.concat(d.parent.children)
+      // d.parent.children.sort((a,b) => (a.name < b.name || a.name == "Low") ? 1 : -1)
+      d.parent.children = d.parent._original
+      d.parent._children = null
+    }
+
+    if (typeof d._original === "undefined") {
+      d._original = d.children;
+    }
+
     d._children = d.children;
     d.children = null;
-  } else {
-    d.children = d._children;
-    d._children = null;
-  }
+ }
+
+
+  
+// Hide or show Node d's children
+
 }
 
 // Node labels
